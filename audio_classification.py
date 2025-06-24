@@ -11,7 +11,6 @@ from tensorflow.keras.layers import Dense, Dropout, Activation
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
-# Paths
 directory = '/Users/rezajabbir/Documents/HEP/24P/project_msavi'
 
 audio_path = directory+'ESC-50-master/audio'
@@ -19,10 +18,8 @@ metadata_path = '/Users/rezajabbir/Documents/HEP/24P/project_msavi/ESC-50-master
 forest_audio_path = '/Users/rezajabbir/Documents/HEP/24P/project_msavi/trajet.wav'
 model_save_path = '/Users/rezajabbir/Documents/HEP/24P/project_msavi/audio_classification_model.h5'
 
-# Load metadata
 metadata = pd.read_csv(metadata_path)
 
-# Function to load and preprocess data using Mel-spectrogram
 def load_data(audio_path, metadata):
     data = []
     labels = []
@@ -39,10 +36,8 @@ def load_data(audio_path, metadata):
         labels.append(row["category"])
     return np.array(data), np.array(labels)
 
-# Load and preprocess data
 X, y = load_data(audio_path, metadata)
 
-# Encode labels
 le = LabelEncoder()
 yy = to_categorical(le.fit_transform(y))
 
@@ -50,19 +45,14 @@ yy = to_categorical(le.fit_transform(y))
 X_train, X_test, y_train, y_test = train_test_split(X, yy, test_size=0.2, random_state=42)
 
 def augment_audio(audio, sr):
-    # Add Gaussian noise
     noise = np.random.randn(len(audio))
     audio_noise = audio + 0.005 * noise
-
-    # Time-stretching
     audio_stretch = librosa.effects.time_stretch(audio, rate=1.1)
 
-    # Pitch-shifting
     audio_shift = librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=4)
 
     return [audio, audio_noise, audio_stretch, audio_shift]
 
-# Augment the dataset
 def load_and_augment_data(audio_path, metadata):
     metadata = pd.read_csv(metadata_path)
     data = []
@@ -82,17 +72,13 @@ def load_and_augment_data(audio_path, metadata):
             labels.append(row["category"])
     return np.array(data), np.array(labels)
 
-# Load and augment data
 X, y = load_and_augment_data(audio_path, metadata_path)
 
-# Encode labels
 le = LabelEncoder()
 yy = to_categorical(le.fit_transform(y))
 
-# Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, yy, test_size=0.2, random_state=42)
 
-# Build the model
 model = Sequential()
 model.add(Dense(512, input_shape=(X_train.shape[1],)))
 model.add(Activation('relu'))
@@ -106,21 +92,16 @@ model.add(Dropout(0.5))
 model.add(Dense(len(le.classes_)))
 model.add(Activation('softmax'))
 
-# Compile the model
 model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=Adam(learning_rate=0.001))
 
-# Train the model
 history = model.fit(X_train, y_train, batch_size=32, epochs=50, validation_data=(X_test, y_test), verbose=1)
 
-# Evaluate the model
 score = model.evaluate(X_test, y_test, verbose=0)
 print("Test Loss:", score[0])
 print("Test Accuracy:", score[1])
 
-# Save the model
 model.save(model_save_path)
 
-# Plot training & validation accuracy values
 plt.figure(figsize=(12, 4))
 plt.subplot(1, 2, 1)
 plt.plot(history.history['accuracy'])
@@ -130,7 +111,6 @@ plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
 plt.legend(['Train', 'Validation'], loc='upper left')
 
-# Plot training & validation loss values
 plt.subplot(1, 2, 2)
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
@@ -173,12 +153,10 @@ def classify_long_audio(file_path, segment_duration=5):
     
     return predictions
 
-# Classify the long audio file
 predictions = classify_long_audio(forest_audio_path)
 for i, prediction in enumerate(predictions):
     print(f'Segment {i + 1}: {prediction}')
 
-# Plot class distribution
 plt.figure(figsize=(10, 6))
 sns.countplot(x=predictions, order=np.unique(predictions))
 plt.title('Class Distribution of Forest Audio Segments')
